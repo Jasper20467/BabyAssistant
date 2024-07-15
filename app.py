@@ -8,6 +8,8 @@ from linebot.exceptions import (
 )
 from linebot.models import *
 
+from DataProcessor import *
+
 app = Flask(__name__)
 
 # 以下請替換為您的 Channel Secret 和 Channel Access Token
