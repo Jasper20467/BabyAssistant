@@ -1,4 +1,3 @@
-#app.py
 from flask import Flask, request, abort
 
 from linebot import (
@@ -7,9 +6,7 @@ from linebot import (
 from linebot.exceptions import (
     InvalidSignatureError
 )
-from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
-)
+from linebot.models import *
 
 app = Flask(__name__)
 
@@ -18,29 +15,38 @@ line_bot_api = LineBotApi('m8deMq/iaZ56h+wbHflTmFIu5JXPu4hOi0Q2yKW5vwQy4W3RsL5K/
 handler = WebhookHandler('58abdf1b41b1580ddd1b43e1f17cab96')
 
 
+# 監聽所有來自 /callback 的 Post Request
 @app.route("/callback", methods=['POST'])
 def callback():
     # get X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
-
     # get request body as text
     body = request.get_data(as_text=True)
     app.logger.info("Request body: " + body)
-
     # handle webhook body
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
         abort(400)
-
     return 'OK'
 
 
+# 處理訊息
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=event.message.text))
+    msg=str(event.message.text)
+    
+    line_bot_api.reply_message(event.reply_token, TextSendMessage(msg))
+
+@handler.add(MemberJoinedEvent)
+def welcome(event):
+    uid = event.joined.members[0].user_id
+    gid = event.source.group_id
+    profile = line_bot_api.get_group_member_profile(gid, uid)
+    name = profile.display_name
+    basicInfoExample = '建立資料\n[名稱]:栗子哥 \n[出生日期]:2024/07/01\n[出生體重]:2450\n[出生身長]:49.5\n[出生頭圍]:32.5'
+    message = TextSendMessage(text=f'{name}歡迎加入，請初始化建立Baby基本資料。範例如下:\{basicInfoExample}')
+    line_bot_api.reply_message(event.reply_token, message)       
 
 
 if __name__ == "__main__":
